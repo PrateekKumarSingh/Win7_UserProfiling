@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory=$true,Position=0)] $AccountPicturePath
     )
 
@@ -135,8 +135,11 @@ Function Tweak-InternetExplorer
 {
 	#Sets Homepage on IE
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" “Start Page” "http://Google.com"
-	#Enables Favourites Bar on IE 
+	#Enables Menu, Command, Favourites and the Status Bar on IE 
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" alwaysshowmenus -Value 1
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" LinksBandEnabled -Value 1
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" showstatusbar -Value 1
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" commandbarenabled -Value 1
 }
 
 Function Main
@@ -145,6 +148,8 @@ Function Main
 	Write-Host "1. Set User Account Picture as $AccountPicturePath : Done" -Fore Yellow
 	[Desktop.ChangeBackground]::SetSysColors($Elements.Length, $Elements, $RGB_ToInteger) | Out-Null
 	Write-Host "2. Set Desktop Background to solid Black : Done" -Fore Yellow
+	Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name EnableLUA -Value 0
+	Write-Host "Set user account control setting to Never Notify : Done" -Fore Yellow
 	Edit-RegistryKeys
 	Disable-SleepAndHibernate
 	PinUnPin-Application -Action unpinfromtaskbar -FilePath "C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
@@ -154,11 +159,3 @@ Function Main
 }
 
 Main
-
-
-#if(get-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" -Name StatusBarOther -ErrorAction SilentlyContinue){
-#	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" -Name StatusBarOther -Value 1
-#}
-#else{
-#		New-Item -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" -Name StatusbarOther -Value 1
-#}
