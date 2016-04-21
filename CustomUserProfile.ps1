@@ -1,8 +1,18 @@
+###################################################################
+# Author		: Prateek Singh
+# Email			: Prateeksingh1590@gmail.com
+# Description	: Powershell script for Windows user profiling
+###################################################################
+
 Param(
     [Parameter(Mandatory=$true,Position=0)] $AccountPicturePath
     )
+	
+cls;
 
+# Adding drawing Assemblies to generate a BMP image for wallpaper
 Add-Type -AssemblyName System.Drawing
+
 Add-Type -TypeDefinition @'
 	using System; 
 	using System.Runtime.InteropServices; 
@@ -14,6 +24,7 @@ Add-Type -TypeDefinition @'
 										}
 	}
 '@ -ErrorAction SilentlyContinue
+
 Add-Type -TypeDefinition @'
 	using System; 
 	using System.Runtime.InteropServices; 
@@ -33,6 +44,7 @@ Add-Type -TypeDefinition @'
 		}
 '@ -ErrorAction SilentlyContinue
 
+$homepageURL = "http://Google.com"
 [Int32[]]$Elements = 1 #Color desktop
 [Int32[]]$RGB_ToInteger = [Drawing.ColorTranslator]::ToWin32([Drawing.Color]::Black) #Required color
 
@@ -41,15 +53,15 @@ Function Edit-RegistryKeys
 	$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'
 	
 	Set-ItemProperty "$key\Advanced" Hidden 1
-	Write-Host "3. Show Hidden Files - Done" -Fore Yellow
+	Write-Host "4. Show Hidden Files - Done" -Fore Yellow
 	Set-ItemProperty "$key\Advanced" HideFileExt 0
-	Write-Host "4. Show File Extensions - Done" -Fore Yellow
+	Write-Host "5. Show File Extensions - Done" -Fore Yellow
 	Set-ItemProperty "$key\Advanced" TaskbarGlomLevel 1
-	Write-Host "5. Set TaskBar items combine when Full - Done" -Fore Yellow
+	Write-Host "6. Set TaskBar items combine when Full - Done" -Fore Yellow
 	Set-ItemProperty $key -Name enableautotray -Value 0
-	Write-Host "6. Set System tray to Never Hide - Done" -Fore Yellow
+	Write-Host "7. Set System tray to Never Hide - Done" -Fore Yellow
 	Set-ItemProperty "$key\advanced" -name Start_ShowSetProgramAccessAndDefaults -Value 0
-	Write-Host "7. Hide Default programs from Start Menu - Done" -Fore Yellow
+	Write-Host "8. Hide Default programs from Start Menu - Done" -Fore Yellow
 		
 	Stop-Process -ProcessName explorer
 
@@ -61,7 +73,7 @@ Function Disable-SleepAndHibernate
 	powercfg -change -standby-timeout-ac 0
 	powercfg -change -disk-timeout-ac 0
 	powercfg -change -hibernate-timeout-ac 0
-	Write-Host "8. Set Hibernate\Sleep\MonitorTimout to Never : Done" -Fore Yellow
+	Write-Host "9. Set Hibernate\Sleep\MonitorTimout to Never : Done" -Fore Yellow
 }
 
 Function PinUnPin-Application 
@@ -126,7 +138,7 @@ Function PinUnPin-Application
 
 Function Remove-StartMenuShortcuts
 {
-	(gci "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\" -Recurse -exclude *sticky*lnk,*calc*lnk,*snipping*lnk,*visual*lnk,*powershell*ise*lnk).fullname`
+	(gci "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\" -Recurse -exclude *sticky*lnk,*calc*lnk,*snipping*lnk).fullname`
 	|?{$_ -notlike "*accessor*" -and $_ -notlike "*maintenance*" -and $_ -notlike "*Administrative Tools*"} `
 	|Remove-Item -Recurse -Confirm:$false -ErrorAction SilentlyContinue
 }
@@ -134,28 +146,42 @@ Function Remove-StartMenuShortcuts
 Function Tweak-InternetExplorer
 {
 	#Sets Homepage on IE
-	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" “Start Page” "http://Google.com"
+	Write-Host "11. Set Homepage in Internet Explorer as $HomepageURL : Done" -Fore Yellow
+	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Main" “Start Page” $HomepageURL
 	#Enables Menu, Command, Favourites and the Status Bar on IE 
+	Write-Host "12. Enable MenuBar in Internet Explorer : Done" -Fore Yellow
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" alwaysshowmenus -Value 1
+	Write-Host "13. Enable FavoriteBar in Internet Explorer : Done" -Fore Yellow
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" LinksBandEnabled -Value 1
+	Write-Host "14. Enable StatusBar in Internet Explorer : Done" -Fore Yellow
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" showstatusbar -Value 1
+	Write-Host "15. Enable CommandBar in Internet Explorer : Done" -Fore Yellow
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Internet Explorer\Minie" commandbarenabled -Value 1
+
+	Write-Host "16. Remove unwanted Favorites from Internet Explorer : Done" -Fore Yellow
+	gci $([Environment]::GetFolderPath('Favorites','None')) -Recurse | Remove-Item -Recurse -Force
 }
 
 Function Main
 {
 	[WinAPIs.UserAccountPicture]::SetUserTile("$env:USERDOMAIN\$env:USERNAME",0,$AccountPicturePath)
 	Write-Host "1. Set User Account Picture as $AccountPicturePath : Done" -Fore Yellow
+	Set-ItemProperty "HKCU:\control panel\desktop" -Name wallpaper -Value ""
 	[Desktop.ChangeBackground]::SetSysColors($Elements.Length, $Elements, $RGB_ToInteger) | Out-Null
+	RUNDLL32.EXE USER32.DLL,UpdatePerUserSystemParameters 1, True;
 	Write-Host "2. Set Desktop Background to solid Black : Done" -Fore Yellow
 	Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name EnableLUA -Value 0
-	Write-Host "Set user account control setting to Never Notify : Done" -Fore Yellow
+	Write-Host "3. Set user account control setting to Never Notify : Done" -Fore Yellow
 	Edit-RegistryKeys
 	Disable-SleepAndHibernate
 	PinUnPin-Application -Action unpinfromtaskbar -FilePath "C:\Program Files (x86)\Windows Media Player\wmplayer.exe"
-	Write-Host "9. Unpin Windows Media Player : Done" -Fore Yellow
+	Write-Host "10. Unpin Windows Media Player : Done" -Fore Yellow
+	Tweak-InternetExplorer
 	#Remove-StartMenuShortcuts
-	Write-Host "10. Unpin StartMenu Shortcuts : Done" -Fore Yellow
+	Write-Host "17. Unpin StartMenu Shortcuts : Done" -Fore Yellow
+	Write-Host "18. Remove Sample Music and Pictures : Done" -Fore Yellow
+	Get-ChildItem "C:\Users\Public\Music\Sample Pictures" | Remove-Item -Force -ErrorAction SilentlyContinue
+	Get-Childitem "C:\Users\Public\Music\Sample MUsic" | Remove-Item -Force -ErrorAction SilentlyContinue
 }
 
 Main
